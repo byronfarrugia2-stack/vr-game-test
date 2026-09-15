@@ -553,6 +553,583 @@ color="#3a4749"></a-text>
 width="0.55" height="0.65" depth="0.12" material="color:#1a73c4; shader:flat"></a-box>
 <a-text value="HAND SCAN" position="-1.9 -0.2 0" align="center" width="1.4"
 color="#3a4749"></a-text>
+<script>
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    if (!window.AFRAME) document.getElementById('loadError').classList.add('show');
+  }, 2500);
+});
+
+function initGame() {
+  const $ = (sel) => document.querySelector(sel);
+  function el(tag, attrs) {
+    const e = document.createElement(tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  // Lab dressing (unchanged)
+  function buildLabDressing() {
+    const root = $('#labDressing');
+
+    root.appendChild(el('a-box', {
+      position: '6.7 0.5 2',
+      width: '0.5',
+      height: '1',
+      depth: '2',
+      material: 'color:#8a9a9c; shader:flat'
+    }));
+
+    root.appendChild(el('a-text', {
+      value: 'WET LAB BENCH - SAMPLE PREP',
+      position: '6.9 1.6 2',
+      rotation: '0 -90 0',
+      align: 'center',
+      width: '2.6',
+      color: '#3a4749'
+    }));
+
+    root.appendChild(el('a-plane', {
+      position: '6.68 1.35 2.8',
+      rotation: '0 -90 8',
+      width: '0.4',
+      height: '0.3',
+      material: 'color:#f5e28a; shader:flat'
+    }));
+
+    root.appendChild(el('a-text', {
+      value: 'OVERRIDE PIN:\n? - ? - ? - ? ',
+      position: '6.66 1.35 2.8',
+      rotation: '0 -90 8',
+      align: 'center',
+      width: '1',
+      color: '#3a2f0a'
+    }));
+
+    // PERIODIC TABLE (unchanged layout)
+    const elements = [
+      ['H', 1, 1], ['He', 1, 18],
+      ['Li', 2, 1], ['Be', 2, 2], ['B', 2, 13], ['C', 2, 14], ['N', 2, 15], ['O', 2, 16], ['F', 2, 17], ['Ne', 2, 18],
+      ['Na', 3, 1], ['Mg', 3, 2], ['Al', 3, 13], ['Si', 3, 14], ['P', 3, 15], ['S', 3, 16], ['Cl', 3, 17], ['Ar', 3, 18]
+    ];
+
+    const cellSize = 0.18, originX = -5.6, originY = 3.6;
+
+    root.appendChild(el('a-plane', {
+      position: `${originX + 1.3} ${originY + 0.1} -6.96`,
+      width: '3.6',
+      height: '2.3',
+      material: 'color:#e8edf0; shader:flat'
+    }));
+
+    root.appendChild(el('a-text', {
+      value: 'PERIODIC TABLE OF THE ELEMENTS (1-18)',
+      position: `${originX + 1.3} ${originY + 0.9} -6.94`,
+      align: 'center',
+      width: '3.2',
+      color: '#3a4749'
+    }));
+
+    elements.forEach(([sym, row, col]) => {
+      const x = originX + (col - 1) * cellSize;
+      const y = originY - (row - 1) * cellSize;
+
+      root.appendChild(el('a-plane', {
+        position: `${x} ${y} -6.95`,
+        width: cellSize * 0.88,
+        height: cellSize * 0.88,
+        material: 'color:#c7d0d2; shader:flat'
+      }));
+
+      root.appendChild(el('a-text', {
+        value: sym,
+        position: `${x} ${y} -6.93`,
+        align: 'center',
+        width: '1.3',
+        color: '#3a4749'
+      }));
+    });
+
+    // Biohazard sign
+    root.appendChild(el('a-plane', {
+      position: '-2.4 2.6 -6.9',
+      width: '1',
+      height: '1',
+      material: 'color:#f5e28a; shader:flat'
+    }));
+    root.appendChild(el('a-text', {
+      value: 'BIOHAZARD\nAREA',
+      position: '-2.4 2.6 -6.88',
+      align: 'center',
+      width: '1.6',
+      color: '#2b2b2b'
+    }));
+
+    // Ceiling rails
+    root.appendChild(el('a-box', {
+      position: '-3 4.7 0',
+      rotation: '0 0 90',
+      width: '4.5',
+      height: '0.15',
+      depth: '0.15',
+      material: 'color:#9aa4a6; shader:flat'
+    }));
+    root.appendChild(el('a-box', {
+      position: '3 4.7 -3',
+      rotation: '90 0 0',
+      width: '5',
+      height: '0.15',
+      depth: '0.15',
+      material: 'color:#9aa4a6; shader:flat'
+    }));
+  }
+
+  buildLabDressing();
+
+  // Hover feedback (unchanged)
+  function wireHoverFeedback() {
+    document.querySelectorAll('.clickable').forEach((elm) => {
+      elm.addEventListener('mouseenter', () => {
+        $('#crosshair').classList.add('hot');
+        elm.setAttribute('scale', '1.15 1.15 1.15');
+      });
+      elm.addEventListener('mouseleave', () => {
+        $('#crosshair').classList.remove('hot');
+        elm.setAttribute('scale', '1 1 1');
+      });
+    });
+  }const state = {
+  stage: 'intro',
+  contamination: 0,
+  contaminationPaused: false,
+  gameOver: false,
+  playerMarked: false,
+  power: { 1: false, 2: false, 3: false },
+  sampleArmed: false,
+  selectedFragment: null,
+  dnaSlots: { A: null, B: null, C: null },
+  ventSequence: [],
+  ventCorrectSequence: [],
+  finalSteps: { scan: false, stabiliser: false, lasers: false, code: false },
+  faultySwitch: "X", // FIXED: decoy only
+  correctPowerOrder: [],
+  correctBottle: null,
+  pinCode: ""
+};
+
+let pinInput = "";
+
+function playSound(id) {
+  const e = document.getElementById(id);
+  if (e) { e.currentTime = 0; e.play().catch(() => {}); }
+}
+
+function toast(msg, ms = 1800) {
+  const t = document.querySelector('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+function setObjective(text) {
+  const box = document.querySelector('#objectiveBox');
+  box.classList.remove('show');
+  setTimeout(() => {
+    box.textContent = text;
+    box.classList.add('show');
+  }, 150);
+}
+
+function setStage(name, hint) {
+  document.querySelector('#stageName').textContent = name;
+  document.querySelector('#stageHint').textContent = hint;
+}
+
+function setGoalText(text) {
+  const e = document.querySelector('#goalText');
+  e.setAttribute('value', text);
+  e.setAttribute('animation_fade', 'property: opacity; from: 0; to: 1; dur: 1200; easing: easeInOutQuad');
+}
+
+function flashScreen(color = "#e0293c", duration = 250) {
+  const f = document.querySelector('#flash');
+  f.style.background = color;
+  f.style.transition = 'none';
+  f.style.opacity = '0.45';
+  requestAnimationFrame(() => {
+    f.style.transition = `opacity ${duration}ms ease`;
+    f.style.opacity = '0';
+  });
+}
+
+function setContamination(delta) {
+  if (state.gameOver) return;
+  state.contamination = Math.max(0, Math.min(100, state.contamination + delta));
+  const fill = document.querySelector('#meterFill');
+  fill.style.width = state.contamination + '%';
+  document.querySelector('#meterPct').textContent = Math.round(state.contamination) + '%';
+
+  fill.style.background =
+    state.contamination < 40 ? 'var(--safe)' :
+    state.contamination < 75 ? 'var(--warn)' :
+    'var(--danger)';
+
+  if (delta > 0) flashScreen('#e0293c', 200);
+  if (state.contamination >= 100) failEnding();
+}
+
+setInterval(() => {
+  if (!state.contaminationPaused && !state.gameOver && state.stage !== 'intro') {
+    setContamination(1);
+  }
+}, 8000);
+
+function randomizeLogic() {
+  // FIXED: faulty switch is ALWAYS the decoy
+  state.faultySwitch = "X";
+
+  // Correct order for power: random permutation of [1,2,3]
+  const base = ['1','2','3'];
+  state.correctPowerOrder = base.sort(() => Math.random() - 0.5);
+
+  // Vent sequence
+  const ventBase = ['1','2','3'];
+  state.ventCorrectSequence = ventBase.sort(() => Math.random() - 0.5);
+
+  // Correct bottle
+  const bottles = ['A','B','C'];
+  state.correctBottle = bottles[Math.floor(Math.random()*bottles.length)];
+
+  // FIXED: pinCode string
+  state.pinCode = Array.from({length:4}, () => String(Math.floor(Math.random()*10))).join("");
+}
+
+randomizeLogic();
+
+/* ============================================================
+   PERIODIC TABLE CLUE (ADDED)
+   Highlights H, He, Li based on correctPowerOrder
+   ============================================================ */
+function applyPeriodicTableClue() {
+  const topRowSymbols = ['H','He','Li'];
+  const topRow = [];
+
+  document.querySelectorAll('#labDressing a-text').forEach(t => {
+    if (topRowSymbols.includes(t.getAttribute('value'))) {
+      topRow.push(t);
+    }
+  });
+
+  // Reset
+  topRow.forEach(el => {
+    el.setAttribute('color', '#3a4749');
+    el.setAttribute('scale', '1 1 1');
+  });
+
+  // Highlight in order
+  state.correctPowerOrder.forEach((num, index) => {
+    const idx = parseInt(num) - 1;
+    const el = topRow[idx];
+    if (!el) return;
+    el.setAttribute('color', '#1f9d5c');
+    el.setAttribute('scale', `${1 + index * 0.15} ${1 + index * 0.15} 1`);
+  });
+}
+
+applyPeriodicTableClue();
+
+/* ============================================================
+   POWER PUZZLE — FIXED
+   ============================================================ */
+
+let powerOrderInput = [];
+
+['switch1', 'switch2', 'switch3'].forEach((id) => {
+  document.querySelector('#' + id).addEventListener('click', (e) => {
+    if (state.stage !== 'power') return;
+
+    const num = e.target.getAttribute('data-switch');
+
+    // Faulty switch is ALWAYS the decoy
+    if (num === state.faultySwitch) {
+      toast('WARNING: relay fault triggered');
+      playSound('sfx-error');
+      setContamination(10);
+      return;
+    }
+
+    state.power[num] = !state.power[num];
+    e.target.setAttribute('material', `color:${state.power[num] ? '#1f9d5c' : '#e0293c'}; shader:flat`);
+
+    checkPower(num);
+  });
+});
+
+document.querySelector('#switchFaulty').addEventListener('click', () => {
+  if (state.stage !== 'power') return;
+  toast('WARNING: relay fault triggered');
+  playSound('sfx-error');
+  setContamination(12);
+});
+
+function checkPower(num) {
+  if (!state.power[num]) {
+    powerOrderInput = powerOrderInput.filter(n => n !== num);
+    return;
+  }
+
+  powerOrderInput.push(num);
+
+  if (powerOrderInput.length === 3) {
+    if (powerOrderInput.join("") === state.correctPowerOrder.join("")) {
+      toast('Power restored.');
+      playSound('sfx-success');
+      startDnaPuzzle();
+    } else {
+      toast('Incorrect relay sequence. Contamination spike.');
+      playSound('sfx-error');
+      setContamination(10);
+
+      powerOrderInput = [];
+      state.power = {1:false,2:false,3:false};
+
+      ['switch1','switch2','switch3'].forEach(id => {
+        document.querySelector('#' + id).setAttribute('material', 'color:#e0293c; shader:flat');
+      });
+    }
+  }
+}
+
+/* ============================================================
+   DNA PUZZLE (unchanged)
+   ============================================================ */
+
+function startDnaPuzzle() {
+  state.stage = 'dna';
+  setStage('SAMPLE UNSTABLE', 'Retrieve the sample, then sequence the gene fragments.');
+  setGoalText('STABILIZE THE SAMPLE.');
+  setObjective('Click the glowing sample to load it into the sequencer. Each slot tells you the color strand it needs.');
+
+  toast("Sequencer online. WARNING: Sample instability rising.");
+}
+
+document.querySelector('#sample').addEventListener('click', () => {
+  if (state.stage !== 'dna' || state.sampleArmed) return;
+
+  state.sampleArmed = true;
+
+  document.querySelector('#sample').setAttribute('animation_move', 'property: position; to: -2 1.05 -5.4; dur: 700; easing: easeInOutQuad');
+  document.querySelector('#dnaArea').setAttribute('visible', true);
+  document.querySelector('#fragments').setAttribute('visible', true);
+
+  document.querySelector('#slotAHint').setAttribute('visible', true);
+  document.querySelector('#slotBHint').setAttribute('visible', true);
+  document.querySelector('#slotCHint').setAttribute('visible', true);
+
+  setTimeout(() => {
+    toast("Mutation detected. Fragments shifting.");
+    playSound('sfx-glitch');
+
+    const fragA = document.querySelector('#fragA');
+    const fragB = document.querySelector('#fragB');
+    const posA = fragA.getAttribute('position');
+    const posB = fragB.getAttribute('position');
+
+    fragA.setAttribute('position', posB);
+    fragB.setAttribute('position', posA);
+  }, 7000);
+});
+
+document.querySelectorAll('.dna-fragment').forEach((frag) => {
+  frag.addEventListener('click', (e) => {
+    if (state.stage !== 'dna') return;
+    const id = e.target.getAttribute('id');
+    state.selectedFragment = id;
+    toast(`Fragment selected: ${id}`);
+  });
+});
+
+document.querySelectorAll('.dna-slot').forEach((slot) => {
+  slot.addEventListener('click', (e) => {
+    if (state.stage !== 'dna') return;
+
+    if (!state.selectedFragment) {
+      toast('Select a fragment first.');
+      return;
+    }
+
+    const slotId = e.target.getAttribute('data-slot');
+    state.dnaSlots[slotId] = state.selectedFragment;
+
+    e.target.setAttribute('material', 'color:#1f9d5c; shader:flat');
+
+    state.selectedFragment = null;
+
+    checkDna();
+  });
+});
+
+function checkDna() {
+  if (!state.dnaSlots.A || !state.dnaSlots.B || !state.dnaSlots.C) return;
+
+  const correct =
+    state.dnaSlots.A === 'fragB' &&
+    state.dnaSlots.B === 'fragC' &&
+    state.dnaSlots.C === 'fragA';
+
+  if (correct) {
+    toast('Sequencing complete. Sample stabilized.');
+    playSound('sfx-success');
+    startChemPuzzle();
+  } else {
+    toast('Incorrect sequence. Contamination spike.');
+    playSound('sfx-error');
+    setContamination(12);
+
+    state.dnaSlots = {A:null,B:null,C:null};
+
+    document.querySelectorAll('.dna-slot').forEach(slot => {
+      slot.setAttribute('material', 'color:#c7d0d2; shader:flat');
+    });
+  }
+}
+
+/* ============================================================
+   CHEM PUZZLE — MIXER FIXED
+   ============================================================ */
+
+function startChemPuzzle() {
+  state.stage = 'chem';
+  setStage('CHEMICAL STABILISER', 'Prepare the correct compound to slow contamination.');
+  setGoalText('MIX STABILISING COMPOUND.');
+  setObjective('Use the bottles and mixer. Only one combination yields a stable reaction.');
+  document.querySelector('#chemArea').setAttribute('visible', true);
+}
+
+let selectedBottle = null;
+
+document.querySelectorAll('.bottle').forEach(bottle => {
+  bottle.addEventListener('click', (e) => {
+    if (state.stage !== 'chem') return;
+
+    selectedBottle = e.target.getAttribute('data-bottle');
+    toast(`Bottle ${selectedBottle} selected.`);
+  });
+});
+
+document.querySelector('#mixer').addEventListener('click', () => {
+  if (state.stage !== 'chem') return;
+
+  if (!selectedBottle) {
+    toast('Select a bottle first.');
+    return;
+  }
+
+  if (selectedBottle === state.correctBottle) {
+    toast('Compound stable.');
+    playSound('sfx-success');
+    startVentPuzzle();
+  } else {
+    toast('Unstable compound. Contamination spike.');
+    playSound('sfx-error');
+    setContamination(12);
+  }
+});
+
+/* ============================================================
+   VENT PUZZLE (unchanged)
+   ============================================================ */
+
+function startVentPuzzle() {
+  state.stage = 'vent';
+  setStage('AIRFLOW CONTROL', 'Route airflow to clear contamination.');
+  setGoalText('VENT CONTAMINATION.');
+  setObjective('Press the airflow buttons in the correct sequence.');
+  document.querySelector('#ventArea').setAttribute('visible', true);
+}
+
+document.querySelectorAll('.vent-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    if (state.stage !== 'vent') return;
+
+    const num = e.target.getAttribute('data-btn');
+    state.ventSequence.push(num);
+
+    if (state.ventSequence.length === 3) {
+      if (state.ventSequence.join("") === state.ventCorrectSequence.join("")) {
+        toast('Airflow sequence correct.');
+        playSound('sfx-success');
+        startFinalOverride();
+      } else {
+        toast('Incorrect airflow sequence.');
+        playSound('sfx-error');
+        setContamination(10);
+      }
+
+      state.ventSequence = [];
+    }
+  });
+});
+
+/* ============================================================
+   FINAL OVERRIDE (unchanged)
+   ============================================================ */
+
+function startFinalOverride() {
+  state.stage = 'final';
+  setStage('FINAL OVERRIDE', 'Complete all steps to restore containment.');
+  setGoalText('COMPLETE OVERRIDE.');
+  setObjective('Perform all four override steps.');
+  document.querySelector('#finalArea').setAttribute('visible', true);
+}
+
+document.querySelectorAll('.final-step').forEach(step => {
+  step.addEventListener('click', (e) => {
+    if (state.stage !== 'final') return;
+
+    const id = e.target.getAttribute('data-step');
+    state.finalSteps[id] = true;
+
+    toast(`Step ${id.toUpperCase()} complete.`);
+
+    checkFinal();
+  });
+});
+
+function checkFinal() {
+  const s = state.finalSteps;
+  if (s.scan && s.stabiliser && s.lasers && s.code) {
+    successEnding();
+  }
+}
+
+/* ============================================================
+   ENDINGS
+   ============================================================ */
+
+function failEnding() {
+  state.gameOver = true;
+  document.querySelector('#failOverlay').classList.add('active');
+}
+
+function successEnding() {
+  state.gameOver = true;
+  document.querySelector('#successOverlay').classList.add('active');
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+
+initGame();
+</script>
+</body>
+</html>
+
+
+  wireHoverFeedback();
+}
 
 <a-box class="clickable final-step" id="stepStabiliser" data-step="stabiliser" position="-0.65 0.4 0"
 width="0.55" height="0.65" depth="0.12" material="color:#1f9d5c; shader:flat"></a-box>
