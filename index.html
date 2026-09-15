@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CONTAINMENT :: Lab 07</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe-master.min.js"></script>
+<style>
+:root{
+  --bg:#eef2f3;
+  --danger:#e0293c;
+  --warn:#c9820a;
+  --safe:#1f9d5c;
+}
+html,body{
+  margin:0;
+  padding:0;
+  background:var(--bg);
+  overflow:hidden;
+  height:100%;
+  font-family:Arial,Helvetica,sans-serif;
+}
+a-scene{width:100vw;height:100vh;}
+
+#loadError{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#12181a;
+  color:#e8edf0;
+  z-index:999;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  text-align:center;
+  padding:40px;
+}
+#loadError.show{display:flex;}
+#loadError h1{color:#ff5e5e;font-size:22px;margin-bottom:12px;}
+#loadError p{max-width:560px;line-height:1.6;color:#bcccce;font-size:14px;}
+#loadError code{background:#1c2b2c;padding:2px 6px;border-radius:3px;color:#9fe8c9;}
+#loadError a{color:#5ec8ff;}
+
+#hud{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  font-family:'Courier New', monospace;
+  color:#12181a;
+  z-index:5;
+}
+#hud *{box-sizing:border-box;}
+#meterBox{
+  position:absolute;
+  top:18px;
+  left:18px;
+  width:280px;
+  background:#ffffffee;
+  border:1px solid #b7c0c4;
+  padding:10px 12px;
+  border-radius:2px;
+}
+#meterLabel{
+  font-size:11px;
+  letter-spacing:1px;
+  color:#5a6a6c;
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:6px;
+}
+#meterTrack{
+  height:10px;
+  width:100%;
+  background:#e0e6e8;
+  border:1px solid #b7c0c4;
+  position:relative;
+}
+#meterFill{
+  height:100%;
+  width:0%;
+  background:var(--safe);
+  transition:width .4s ease, background .4s ease;
+}
+
+#stageBox{
+  position:absolute;
+  top:18px;
+  right:18px;
+  max-width:300px;
+  text-align:right;
+  background:#ffffffee;
+  border:1px solid #b7c0c4;
+  padding:10px 12px;
+  font-size:11px;
+  color:#5a6a6c;
+}
+#stageBox b{
+  color:#12181a;
+  display:block;
+  font-size:12px;
+  letter-spacing:.5px;
+  margin-bottom:2px;
+}
+
+#objectiveBox{
+  position:absolute;
+  bottom:18px;
+  left:18px;
+  max-width:440px;
+  background:#ffffffee;
+  border-left:3px solid var(--warn);
+  padding:10px 14px;
+  font-size:13px;
+  line-height:1.5;
+  color:#12181a;
+  opacity:0;
+  transform:translateY(6px);
+  transition:opacity .5s ease, transform .5s ease;
+}
+#objectiveBox.show{opacity:1;transform:translateY(0);}
+#toast{
+  position:absolute;
+  bottom:70px;
+  left:50%;
+  transform:translateX(-50%) translateY(10px);
+  background:#12181aee;
+  color:#eef2f3;
+  border:1px solid #333;
+  padding:6px 14px;
+  font-size:12px;
+  opacity:0;
+  transition:opacity .3s ease, transform .3s ease;
+  white-space:nowrap;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+#crosshair{
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:6px;
+  height:6px;
+  margin:-3px 0 0 -3px;
+  border-radius:50%;
+  background:#12181a;
+  opacity:0.9;
+  transition:transform .1s ease, background .1s ease;
+  z-index:5;
+}
+#crosshair.hot{
+  background:#1f9d5c;
+  transform:scale(1.4);
+}
+
+#flash{
+  position:fixed;
+  inset:0;
+  background:var(--danger);
+  opacity:0;
+  pointer-events:none;
+  z-index:6;
+}
+
+#startHint{
+  position:fixed;
+  bottom:18px;
+  left:50%;
+  transform:translateX(-50%);
+  font-family:'Courier New', monospace;
+  color:#5a6a6c;
+  font-size:12px;
+  background:#ffffffee;
+  border:1px solid #b7c0c4;
+  padding:6px 14px;
+  z-index:5;
+  pointer-events:none;
+}
+
+.overlay{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  background:rgba(10,15,17,.95);
+  z-index:20;
+  text-align:center;
+  padding:40px;
+  font-family:'Courier New',monospace;
+  color:#eef2f3;
+}
+.overlay.active{display:flex;}
+.overlay h1{
+  font-weight:700;
+  font-size:clamp(26px,5vw,44px);
+  margin:0 0 14px 0;
+  letter-spacing:.5px;
+}
+.overlay p{
+  max-width:560px;
+  color:#a7b8ba;
+  font-size:15px;
+  line-height:1.6;
+  margin:0 0 26px 0;
+}
+.overlay button, #enterBtn{
+  font-family:'Courier New',monospace;
+  background:transparent;
+  color:#eef2f3;
+  border:1px solid #eef2f3;
+  padding:12px 26px;
+  font-size:13px;
+  letter-spacing:1px;
+  cursor:pointer;
+  pointer-events:all;
+}
+.overlay button:hover, #enterBtn:hover{
+  background:#eef2f3;
+  color:#12181a;
+}
+
+#introOverlay h1{color:#ff5e5e;}
+#failOverlay h1{color:#ff5e5e;}
+#successOverlay h1{color:#3ddc8a;}
+#secretOverlay h1{color:#ffb020;}
+
+#pinModal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(8,12,13,.85);
+  z-index:30;
+  align-items:center;
+  justify-content:center;
+  font-family:'Courier New', monospace;
+}
+#pinModal.active{display:flex;}
+#pinBox{
+  background:#12181a;
+  border:1px solid #3a4749;
+  padding:26px 30px;
+  width:280px;
+  text-align:center;
+  color:#dff2ef;
+}
+
+#pinBox h2{
+  margin:0 0 4px 0;
+  font-size:15px;
+  letter-spacing:1px;
+  color:#9fe8c9;
+}
+#pinBox .sub{
+  font-size:11px;
+  color:#7a8f8d;
+  margin-bottom:16px;
+}
+#pinDisplay{
+  font-size:28px;
+  letter-spacing:10px;
+  background:#0a1012;
+  border:1px solid #3a4749;
+  padding:10px 0;
+  margin-bottom:14px;
+  color:#3ddc8a;
+  min-height:1.4em;
+}
+#pinDisplay.wrong{color:#ff5e5e;}
+#pinGrid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin-bottom:14px;
+}
+#pinGrid button{
+  font-family:'Courier New', monospace;
+  font-size:18px;
+  padding:12px 0;
+  background:#1c2b2c;
+  color:#dff2ef;
+  border:1px solid #3a4749;
+  cursor:pointer;
+}
+#pinGrid button:hover{background:#2a3f40;}
+#pinActions{display:flex;gap:8px;}
+#pinActions button{
+  flex:1;
+  font-family:'Courier New', monospace;
+  font-size:12px;
+  padding:10px 0;
+  background:#1c2b2c;
+  color:#dff2ef;
+  border:1px solid #3a4749;
+  cursor:pointer;
+  letter-spacing:1px;
+}
+#pinActions button:hover{background:#2a3f40;}
+#pinClose{
+  margin-top:12px;
+  background:none;
+  border:none;
+  color:#7a8f8d;
+  font-family:'Courier New',monospace;
+  font-size:11px;
+  cursor:pointer;
+  text-decoration:underline;
+}
+</style>
+</head>
+<body>
+<div id="loadError">
+<h1>3D LIBRARY FAILED TO LOAD</h1>
+<p>This page needs the A-Frame library from a CDN, and it did not load - almost always
+caused by a network filter, firewall, or ad-blocker blocking <code>cdn.jsdelivr.net</code>. This
+is not a bug in the page itself.</p>
+<p>Try: disabling any ad-blocker/VPN for this page, switching networks, or opening
+<a href="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe-master.min.js" target="_blank"
+rel="noopener">
+this link
+</a> directly to test it.</p>
+</div>
+
+<div id="hud">
+<div id="meterBox">
+<div id="meterLabel"><span>CONTAMINATION</span><span id="meterPct">0%</span></div>
+<div id="meterTrack"><div id="meterFill"></div></div>
+</div>
+
+<div id="stageBox">
+<b id="stageName">SYSTEM BOOT</b>
+<span id="stageHint">Initializing containment lab ...</span>
+</div>
+
+<div id="objectiveBox"></div>
+<div id="toast"></div>
+</div>
+
+<div id="crosshair"></div>
+
+<div id="startHint" style="display:none;">Click the screen once to look around. WASD to move.
+Aim the dot and click to interact.</div>
+
+<div id="flash"></div>
+
+<div id="introOverlay" class="overlay active">
+<h1>LAB 07 - CONTAINMENT BREACH</h1>
+<p>
+Power failed six minutes ago. Contamination is climbing.
+Restore power, stabilize the sample, and reach containment override
+before the room is lost. Click the screen to look around (WASD to move),
+aim the reticle at objects and click to interact.
+</p>
+<button id="enterBtn">ENTER THE LAB</button>
+</div>
+
+<div id="failOverlay" class="overlay">
+<h1>CONTAINMENT LOST</h1>
+<p>Contamination reached 100%. The lab is sealed from the outside. You did not make it
+out.</p>
+<button onclick="location.reload()">RESTART</button>
+</div>
+
+<div id="successOverlay" class="overlay">
+<h1>CONTAINMENT RESTORED</h1>
+<p>Override accepted. The blast door opens. You make it out before the seal fails.</p>
+<button onclick="location.reload()">RESTART</button>
+</div>
+
+<div id="secretOverlay" class="overlay">
+<h1>"SUBJECT 07 RECOGNISED."</h1>
+<p>The lights dim to a soft amber. The lasers power down on their own. The door was never
+really locked for you.</p>
+<button onclick="location.reload()">RESTART</button>
+</div>
+
+<div id="pinModal">
+<div id="pinBox">
+<h2>OVERRIDE TERMINAL</h2>
+<div class="sub">ENTER 4-DIGIT ACCESS CODE</div>
+<div id="pinDisplay"></div>
+
+<div id="pinGrid">
+<button data-d="1">1</button><button data-d="2">2</button><button data-d="3">3</button>
+<button data-d="4">4</button><button data-d="5">5</button><button data-d="6">6</button>
+<button data-d="7">7</button><button data-d="8">8</button><button data-d="9">9</button>
+<button id="pinBackspace">[x]</button><button data-d="0">0</button><button id="pinSubmit">&lt;&lt;</button>
+</div>
+
+<button id="pinClose">close terminal</button>
+</div>
+</div>
+
+<a-scene id="scene" background="color: #cfd8dc" renderer="physicallyCorrectLights: false">
+
+<a-assets>
+<audio id="sfx-alarm" src="assets/audio/alarm.mp3" preload="auto"></audio>
+<audio id="sfx-voice" src="assets/audio/voice-intro.mp3" preload="auto"></audio>
+<audio id="sfx-bang" src="assets/audio/bang.mp3" preload="auto"></audio>
+<audio id="sfx-error" src="assets/audio/error.mp3" preload="auto"></audio>
+<audio id="sfx-success" src="assets/audio/success.mp3" preload="auto"></audio>
+<audio id="sfx-glitch" src="assets/audio/glitch.mp3" preload="auto"></audio>
+</a-assets>
+
+<a-entity id="rig" position="0 1.6 4" movement-controls="fly:false">
+<a-camera look-controls="pointerLockEnabled: true" wasd-controls="acceleration:60">
+<a-cursor id="cursor"
+raycaster="objects: .clickable; far: 20"
+material="color: #1f9d5c; shader: flat; opacity:0"
+geometry="radiusInner: 0.001; radiusOuter: 0.002">
+</a-cursor>
+</a-camera>
+</a-entity>
+
+<!-- Lights -->
+<a-entity id="ambientLight" light="type: ambient; intensity: 0.9; color: #ffffff"></a-entity>
+<a-entity id="mainLight" light="type: point; intensity: 1; color: #ffffff; distance: 25" position="0 4.5 0"></a-entity>
+<a-entity id="redLight1" light="type: point; intensity: 0; color: #ff2b3d; distance: 10" position="-4 2.5 -3"></a-entity>
+<a-entity id="redLight2" light="type: point; intensity: 0; color: #ff2b3d; distance: 10" position="4 2.5 2"></a-entity>
+
+<!-- Room -->
+<a-plane rotation="-90 0 0" width="14" height="14" material="color:#b7c0c4; shader:flat"></a-plane>
+
+<a-plane rotation="90 0 0" position="0 5 0" width="14" height="14" material="color:#f5f7f8; shader:flat"></a-plane>
+<a-plane position="0 2.5 -7" width="14" height="5" material="color:#dfe6e8; shader:flat"></a-plane>
+
+<a-plane position="0 2.5 7" rotation="0 180 0" width="14" height="5" material="color:#dfe6e8; shader:flat"></a-plane>
+<a-plane position="-7 2.5 0" rotation="0 90 0" width="14" height="5" material="color:#d3dcdf; shader:flat"></a-plane>
+<a-plane position="7 2.5 0" rotation="0 -90 0" width="14" height="5" material="color:#d3dcdf; shader:flat"></a-plane>
+
+<!-- Containment pod -->
+<a-plane rotation="-90 0 0" position="0 0.005 -5" width="6" height="0.5"
+material="color:#c9820a; shader:flat"></a-plane>
+
+<a-entity position="0 1.1 -6.3">
+<a-cylinder radius="0.9" height="2.2" material="color:#8a9a9c; shader:flat"></a-cylinder>
+<a-box position="0.2 0.3 0.85" width="0.05" height="1.4" depth="0.05" rotation="0 0 12"
+material="color:#2b3436; shader:flat"></a-box>
+<a-sphere position="0 -0.9 0.85" radius="0.25" material="color:#39ff88; shader:flat; opacity:0.85; transparent:true"></a-sphere>
+<a-text value="CONTAINMENT POD // BREACHED" position="0 1.5 0.85" align="center"
+width="3" color="#c9303f"></a-text>
+</a-entity>
+
+<a-text id="goalText" value="RESTORE POWER." position="0 2.4 -3" align="center" width="5"
+color="#12181a" opacity="0"></a-text>
+
+<!-- Power zone -->
+<a-entity id="powerPanel" position="-5.5 1.4 -2">
+<a-plane width="1.8" height="1.4" rotation="0 40 0" material="color:#e8edf0; shader:flat"></a-plane>
+<a-text value="POWER RELAY" position="0 0.85 0" rotation="0 40 0" align="center"
+width="2" color="#3a4749"></a-text>
+
+<a-box class="clickable switch" id="switch1" data-switch="1" position="-0.4 0 0.3" rotation="0 40 0"
+width="0.3" height="0.55" depth="0.15" material="color:#e0293c; shader:flat"></a-box>
+
+<a-box class="clickable switch" id="switch2" data-switch="2" position="0 0 0.3" rotation="0 40 0"
+width="0.3" height="0.55" depth="0.15" material="color:#e0293c; shader:flat"></a-box>
+
+<a-box class="clickable switch" id="switch3" data-switch="3" position="0.4 0 0.3" rotation="0 40 0"
+width="0.3" height="0.55" depth="0.15" material="color:#e0293c; shader:flat"></a-box>
+
+<a-box class="clickable switch-decoy" id="switchFaulty" position="0.85 0 0.3" rotation="0 40 0"
+width="0.3" height="0.55" depth="0.15" material="color:#9aa4a6; shader:flat"></a-box>
+
+<a-text value="1 2 3 X" position="0 -0.5 0.3" rotation="0 40 0" align="center" width="2.2"
+color="#3a4749"></a-text>
+</a-entity>
+<!-- DNA zone (back-left) -->
+<a-entity id="dnaArea" position="-2 1.1 -5.6" visible="false">
+<a-box width="1.6" height="1" depth="0.8" material="color:#8a9a9c; shader:flat"></a-box>
+<a-text value="GENE SEQUENCER" position="0 0.85 0" align="center" width="2.4"
+color="#3a4749"></a-text>
+
+<a-box class="clickable dna-slot" id="slotA" data-slot="A" data-correct="fragB" position="-0.5 0.55 0.15"
+width="0.35" height="0.15" depth="0.35" material="color:#c7d0d2; shader:flat"></a-box>
+<a-text id="slotAHint" value="NEEDS: BLUE" position="-0.5 0.35 0.4" align="center"
+width="1.3" color="#1a73c4" visible="false"></a-text>
+
+<a-box class="clickable dna-slot" id="slotB" data-slot="B" data-correct="fragC" position="0 0.55 0.15"
+width="0.35" height="0.15" depth="0.35" material="color:#c7d0d2; shader:flat"></a-box>
+<a-text id="slotBHint" value="NEEDS: YELLOW" position="0 0.35 0.4" align="center"
+width="1.4" color="#c9820a" visible="false"></a-text>
+
+<a-box class="clickable dna-slot" id="slotC" data-slot="C" data-correct="fragA" position="0.5 0.55 0.15"
+width="0.35" height="0.15" depth="0.35" material="color:#c7d0d2; shader:flat"></a-box>
+<a-text id="slotCHint" value="NEEDS: RED" position="0.5 0.35 0.4" align="center"
+width="1.2" color="#c9303f" visible="false"></a-text>
+</a-entity>
+
+<a-sphere class="clickable" id="sample" position="-2 1 -3" radius="0.18"
+material="color:#1f9d5c; shader:flat"></a-sphere>
+
+<a-entity id="fragments" visible="false">
+<a-sphere class="clickable dna-fragment" id="fragA" data-frag="fragA" position="-2.6 1.05 -4.9"
+radius="0.15" material="color:#c9303f; shader:flat"></a-sphere>
+<a-sphere class="clickable dna-fragment" id="fragB" data-frag="fragB" position="-2 1.05 -4.9"
+radius="0.15" material="color:#1a73c4; shader:flat"></a-sphere>
+<a-sphere class="clickable dna-fragment" id="fragC" data-frag="fragC" position="-1.4 1.05 -4.9"
+radius="0.15" material="color:#c9820a; shader:flat"></a-sphere>
+</a-entity>
+
+<!-- Vent + chem zone (right wall) -->
+<a-entity id="chemArea" position="4.5 1.2 -5.2" visible="false">
+<a-text value="DAMAGED READOUT: RE_U_R_D COMPOUND: C -??- STAB" position="0 1 0"
+align="center" width="3" color="#c9303f"></a-text>
+
+<a-cylinder class="clickable bottle" id="bottleA" data-bottle="A" position="-0.6 0.4 0"
+radius="0.14" height="0.42" material="color:#3ddc8a; shader:flat"></a-cylinder>
+
+<a-cylinder class="clickable bottle" id="bottleB" data-bottle="B" position="0 0.4 0"
+radius="0.14" height="0.42" material="color:#e07850; shader:flat"></a-cylinder>
+
+<a-cylinder class="clickable bottle" id="bottleC" data-bottle="C" position="0.6 0.4 0"
+radius="0.14" height="0.42" material="color:#9a5ee0; shader:flat"></a-cylinder>
+
+<a-box id="mixer" position="0 0 0.8" width="0.5" height="0.4" depth="0.5"
+material="color:#8a9a9c; shader:flat"></a-box>
+
+<a-text value="A B (C-7) C" position="0 0.05 0" align="center" width="2.2"
+color="#3a4749"></a-text>
+</a-entity>
+
+<a-entity id="ventArea" position="6.5 1.3 -2" visible="false">
+<a-text value="AIRFLOW SEQUENCE" position="0 0.7 0" rotation="0 -90 0" align="center"
+width="2" color="#3a4749"></a-text>
+
+<a-box class="clickable vent-btn" id="ventBtn1" data-btn="1" position="0 0.3 -0.3" rotation="0 -90 0"
+width="0.24" height="0.24" depth="0.12" material="color:#1a73c4; shader:flat"></a-box>
+
+<a-box class="clickable vent-btn" id="ventBtn2" data-btn="2" position="0 0.3 0" rotation="0 -90 0"
+width="0.24" height="0.24" depth="0.12" material="color:#c9820a; shader:flat"></a-box>
+
+<a-box class="clickable vent-btn" id="ventBtn3" data-btn="3" position="0 0.3 0.3" rotation="0 -90 0"
+width="0.24" height="0.24" depth="0.12" material="color:#c9303f; shader:flat"></a-box>
+</a-entity>
+
+<a-plane id="fogLeak" rotation="-90 0 0" position="0 0.05 0" width="14" height="14"
+material="color:#ffffff; shader:flat; opacity:0; transparent:true"></a-plane>
+
+<!-- Subject 07 vial -->
+<a-cylinder class="clickable" id="vialSubject07" position="6.3 0.9 5.5" radius="0.1"
+height="0.32" material="color:#c9820a; shader:flat"></a-cylinder>
+
+<a-text value="SUBJECT 07" position="6.3 1.2 5.5" align="center" width="1.4"
+color="#3a4749"></a-text>
+
+<!-- Final override zone -->
+<a-entity id="finalArea" position="0 1.3 6.8" rotation="0 180 0" visible="false">
+<a-text value="CONTAINMENT OVERRIDE" position="0 1.5 0" align="center" width="3"
+color="#3a4749"></a-text>
+
+<a-box class="clickable final-step" id="stepScan" data-step="scan" position="-1.9 0.4 0"
+width="0.55" height="0.65" depth="0.12" material="color:#1a73c4; shader:flat"></a-box>
+<a-text value="HAND SCAN" position="-1.9 -0.2 0" align="center" width="1.4"
+color="#3a4749"></a-text>
+
+<a-box class="clickable final-step" id="stepStabiliser" data-step="stabiliser" position="-0.65 0.4 0"
+width="0.55" height="0.65" depth="0.12" material="color:#1f9d5c; shader:flat"></a-box>
+<a-text value="STABILISER" position="-0.65 -0.2 0" align="center" width="1.4"
+color="#3a4749"></a-text>
+
+<a-box class="clickable final-step" id="stepLasers" data-step="lasers" position="0.65 0.4 0"
+width="0.55" height="0.65" depth="0.12" material="color:#c9303f; shader:flat"></a-box>
+<a-text value="ALIGN LASERS" position="0.65 -0.2 0" align="center" width="1.6"
+color="#3a4749"></a-text>
+
+<a-entity position="1.9 0.4 0">
+<a-box width="0.55" height="0.65" depth="0.12" material="color:#2b3436; shader:flat"></a-box>
+<a-plane class="clickable" id="stepCode" data-step="code" position="0 0 0.07" width="0.42"
+height="0.5" material="color:#0f3d2a; shader:flat"></a-plane>
+<a-text value="TERMINAL" position="0 0 0.08" align="center" width="1.1"
+color="#3ddc8a"></a-text>
+</a-entity>
+
+<a-text value="ENTER CODE" position="1.9 -0.2 0" align="center" width="1.4"
+color="#3a4749"></a-text>
+
+<a-plane id="blastDoor" position="0 0 -0.2" width="4" height="3"
+material="color:#dfe6e8; shader:flat"></a-plane>
+</a-entity>
+
+<!-- Dressing root -->
+<a-entity id="labDressing"></a-entity>
+</a-scene>
+
