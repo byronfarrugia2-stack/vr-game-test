@@ -220,7 +220,7 @@
     #successOverlay h1{color:#3ddc8a;}
     #secretOverlay h1{color:#ffb020;}
 
-    #pinModal, #logModal{
+    #pinModal, #logModal, #scopeModal, #compModal{
       display:none;
       position:fixed;
       inset:0;
@@ -230,8 +230,9 @@
       justify-content:center;
       font-family:'Courier New', monospace;
     }
-    #pinModal.active, #logModal.active{display:flex;}
-    #pinBox{
+    #pinModal.active, #logModal.active, #scopeModal.active, #compModal.active{display:flex;}
+
+    #pinBox, #compBox{
       background:#12181a;
       border:1px solid #3a4749;
       padding:26px 30px;
@@ -239,9 +240,9 @@
       text-align:center;
       color:#dff2ef;
     }
-    #pinBox h2{margin:0 0 4px 0;font-size:15px;letter-spacing:1px;color:#9fe8c9;}
-    #pinBox .sub{font-size:11px;color:#7a8f8d;margin-bottom:16px;}
-    #pinDisplay{
+    #pinBox h2, #compBox h2{margin:0 0 4px 0;font-size:15px;letter-spacing:1px;color:#9fe8c9;}
+    #pinBox .sub, #compBox .sub{font-size:11px;color:#7a8f8d;margin-bottom:16px;}
+    #pinDisplay, #compDisplay{
       font-size:28px;
       letter-spacing:10px;
       background:#0a1012;
@@ -251,14 +252,14 @@
       color:#3ddc8a;
       min-height:1.4em;
     }
-    #pinDisplay.wrong{color:#ff5e5e;}
-    #pinGrid{
+    #pinDisplay.wrong, #compDisplay.wrong{color:#ff5e5e;}
+    #pinGrid, #compGrid{
       display:grid;
       grid-template-columns:repeat(3,1fr);
       gap:8px;
       margin-bottom:14px;
     }
-    #pinGrid button{
+    #pinGrid button, #compGrid button{
       font-family:'Courier New',monospace;
       font-size:18px;
       padding:12px 0;
@@ -267,9 +268,8 @@
       border:1px solid #3a4749;
       cursor:pointer;
     }
-    #pinGrid button:hover{background:#2a3f40;}
-    #pinClose,
-    #logClose{
+    #pinGrid button:hover, #compGrid button:hover{background:#2a3f40;}
+    #pinClose, #logClose, #scopeClose, #compClose{
       margin-top:12px;
       background:none;
       border:none;
@@ -280,7 +280,7 @@
       text-decoration:underline;
     }
 
-    #logBox{
+    #logBox, #scopeBox{
       background:#12181a;
       border:1px solid #3a4749;
       padding:24px 28px;
@@ -288,14 +288,14 @@
       color:#dff2ef;
       text-align:left;
     }
-    #logBox h2{margin:0 0 10px 0;font-size:14px;letter-spacing:1px;color:#9fe8c9;}
-    #logBox p{font-size:13px;line-height:1.6;color:#c3d4d2;margin:0;white-space:pre-line;}
+    #logBox h2, #scopeBox h2{margin:0 0 10px 0;font-size:14px;letter-spacing:1px;color:#9fe8c9;}
+    #logBox p, #scopeBox p{font-size:13px;line-height:1.6;color:#c3d4d2;margin:0;white-space:pre-line;}
   </style>
 </head>
 <body>
 <div id="loadError">
   <h1>3D LIBRARY FAILED TO LOAD</h1>
-  <p>This page needs the A-Frame library from a CDN, and it did not load - almost always
+  <p>This page needs the A-Frame library from a CDN, and it did not load—almost always
   caused by a network filter, firewall, or ad-blocker blocking <code>cdn.jsdelivr.net</code>. This
   is not a bug in the page itself.</p>
   <p>Try: disabling any ad-blocker/VPN for this page, switching networks, or opening
@@ -371,11 +371,41 @@
   </div>
 </div>
 
+<div id="compModal">
+  <div id="compBox">
+    <h2>LAB CONSOLE</h2>
+    <div class="sub">ENTER ACCESS PIN (MICROSCOPE CLUE)</div>
+    <div id="compDisplay"></div>
+    <div id="compGrid">
+      <button data-d="1">1</button><button data-d="2">2</button><button data-d="3">3</button>
+      <button data-d="4">4</button><button data-d="5">5</button><button data-d="6">6</button>
+      <button data-d="7">7</button><button data-d="8">8</button><button data-d="9">9</button>
+      <button id="compBackspace">⌫</button><button data-d="0">0</button><button id="compSubmit">⏎</button>
+    </div>
+    <button id="compClose">close console</button>
+  </div>
+</div>
+
 <div id="logModal">
   <div id="logBox">
     <h2 id="logTitle">LOG ENTRY</h2>
     <p id="logBody"></p>
     <button id="logClose">close</button>
+  </div>
+</div>
+
+<div id="scopeModal">
+  <div id="scopeBox">
+    <h2>MICROSCOPE VIEW</h2>
+    <p>
+      The slide shows clustered organisms forming shapes:<br><br>
+      • One cluster looks like a crooked "7".<br>
+      • Another like a tight "3".<br>
+      • A long filament bends into a "9".<br>
+      • The smallest colony forms a "2".<br><br>
+      The console nearby probably cares more about the shapes than the biology.
+    </p>
+    <button id="scopeClose">close microscope</button>
   </div>
 </div>
 
@@ -420,10 +450,19 @@
 
   <a-plane rotation="-90 0 0" position="0 0.005 -5" width="6" height="0.5" material="color:#c9820a; shader:flat"></a-plane>
 
-  <!-- Containment pod + contamination cloud -->
+  <!-- broken containment pod + sample -->
   <a-entity position="0 1.1 -6.3">
     <a-cylinder radius="0.9" height="2.2" material="color:#8a9a9c; shader:flat"></a-cylinder>
     <a-box position="0.2 0.3 0.85" width="0.05" height="1.4" depth="0.05" rotation="0 0 12" material="color:#2b3436; shader:flat"></a-box>
+
+    <!-- cracked glass panels -->
+    <a-plane position="0 0.4 0.9" rotation="0 0 0" width="1.2" height="1.0" material="color:#f5f7f8; opacity:0.35; transparent:true; shader:flat"></a-plane>
+    <a-plane position="0.1 0.4 0.91" rotation="0 0 0" width="0.02" height="0.6" material="color:#c9303f; shader:flat"></a-plane>
+    <a-plane position="-0.15 0.4 0.91" rotation="0 0 0" width="0.02" height="0.4" material="color:#c9303f; shader:flat"></a-plane>
+
+    <!-- leaking trail -->
+    <a-plane position="0 -0.9 0.7" rotation="-90 0 0" width="0.2" height="0.6" material="color:#39ff88; opacity:0.6; transparent:true; shader:flat"></a-plane>
+
     <a-sphere
       id="sample"
       class="clickable"
@@ -435,14 +474,6 @@
     <a-text value="UNSTABLE SAMPLE" position="0 -0.3 0.85" align="center" width="3" color="#1f9d5c"></a-text>
     <a-text value="CONTAINMENT POD // BREACHED" position="0 1.5 0.85" align="center" width="3" color="#c9303f"></a-text>
   </a-entity>
-
-  <!-- contamination visual field -->
-  <a-sphere
-    id="contamField"
-    position="0 1.1 -6.3"
-    radius="3.5"
-    material="color:#e0293c; opacity:0; transparent:true; shader:flat">
-  </a-sphere>
 
   <a-text id="goalText" value="RESTORE POWER." position="0 2.4 -3" align="center" width="5" color="#12181a" opacity="0"></a-text>
 
@@ -469,7 +500,7 @@
     <a-text value="LOG" position="0 0.05 0.13" rotation="-90 0 0" align="center" width="1" color="#3ddc8a"></a-text>
   </a-entity>
 
-  <a-entity id="dnaArea" position="-2 1.1 -5.6" visible="false">
+  <a-entity id="dnaArea" position="-2 1.1 -5.2" visible="false">
     <a-box width="1.6" height="1" depth="0.8" material="color:#8a9a9c; shader:flat"></a-box>
     <a-text value="GENE SEQUENCER" position="0 0.85 0" align="center" width="2.4" color="#3a4749"></a-text>
 
@@ -483,7 +514,7 @@
     <a-text value="NEEDS: Li" position="0.5 0.35 0.4" align="center" width="1.2" color="#3a4749"></a-text>
   </a-entity>
 
-  <a-entity position="-1.3 1.15 -5.3">
+  <a-entity position="-1.3 1.15 -5.0">
     <a-box
       class="clickable datapad"
       id="log2"
@@ -520,6 +551,17 @@
 
     <a-box id="mixer" position="0 0 0.8" width="0.5" height="0.4" depth="0.5" material="color:#8a9a9c; shader:flat"></a-box>
     <a-text value="MIXER // CLICK A BOTTLE TO POUR" position="0 -0.3 0.8" align="center" width="3" color="#3a4749"></a-text>
+  </a-entity>
+
+  <!-- microscope + console near chem area -->
+  <a-entity id="scopeArea" position="4.5 1.2 -3.5" visible="false">
+    <a-cylinder class="clickable" id="microscope" position="-0.6 0.5 0" radius="0.12" height="0.4" material="color:#8a9a9c; shader:flat"></a-cylinder>
+    <a-box position="-0.6 0.8 0" width="0.25" height="0.1" depth="0.25" material="color:#f5f7f8; shader:flat"></a-box>
+    <a-text value="MICROSCOPE" position="-0.6 1.1 0" align="center" width="1.6" color="#3a4749"></a-text>
+
+    <a-box class="clickable" id="labConsole" position="0.6 0.5 0" width="0.5" height="0.4" depth="0.2" material="color:#2b3436; shader:flat"></a-box>
+    <a-plane position="0.6 0.7 0.11" width="0.4" height="0.25" material="color:#0f3d2a; shader:flat"></a-plane>
+    <a-text value="CONSOLE" position="0.6 1.05 0.11" align="center" width="1.6" color="#3ddc8a"></a-text>
   </a-entity>
 
   <a-entity id="ventArea" position="6.5 1.3 -2" visible="false">
@@ -583,6 +625,19 @@
     <a-plane id="blastDoor" position="0 0 -0.2" width="4" height="3" material="color:#dfe6e8; shader:flat"></a-plane>
   </a-entity>
 
+  <!-- extra log with digits 3-4 -->
+  <a-entity position="0.8 1.1 6.2">
+    <a-box
+      class="clickable datapad"
+      id="log5"
+      data-title="SECURITY NOTE (SCRATCHED)"
+      data-body="Override PIN was split across two notes after the last breach drill.%0A%0AYou already saw digits 1-2.%0A%0ADigits 3-4: 7 2."
+      width="0.35" height="0.05" depth="0.25"
+      material="color:#2b3436; shader:flat">
+    </a-box>
+    <a-text value="LOG" position="0 0.05 0.13" rotation="-90 0 0" align="center" width="1" color="#3ddc8a"></a-text>
+  </a-entity>
+
   <a-entity id="labDressing"></a-entity>
 </a-scene>
 
@@ -604,6 +659,7 @@ function initGame() {
   function buildLabDressing() {
     const root = $('#labDressing');
 
+    // tidy benches + storage
     root.appendChild(el('a-box', {
       position: '-6.8 0.9 0.5',
       width: '0.25',
@@ -643,6 +699,7 @@ function initGame() {
       material: 'color:#c7d0d2; shader:flat'
     }));
 
+    // crates
     root.appendChild(el('a-box', {
       position: '-6.3 0.3 -6.3',
       width: '0.6',
@@ -672,6 +729,7 @@ function initGame() {
       material: 'color:#8a5a2a; shader:flat'
     }));
 
+    // wet lab bench
     root.appendChild(el('a-box', {
       position: '6.7 0.5 1.5',
       width: '0.5',
@@ -679,7 +737,6 @@ function initGame() {
       depth: '2',
       material: 'color:#8a9a9c; shader:flat'
     }));
-
     [0.8, 1.2, 2.1].forEach((z, i) => {
       root.appendChild(el('a-cylinder', {
         position: `6.7 1.08 ${z}`,
@@ -695,7 +752,6 @@ function initGame() {
         material: `color:${['#1f9d5c', '#3ddc8a', '#e07850'][i]}; shader:flat`
       }));
     });
-
     root.appendChild(el('a-cylinder', {
       position: '6.65 1.03 1.7',
       rotation: '0 0 90',
@@ -710,7 +766,6 @@ function initGame() {
       height: '0.2',
       material: 'color:#3ddc8a; opacity:0.5; transparent:true; shader:flat'
     }));
-
     [['6.5 1.01 1.0', '-90 0 12'], ['6.62 1.01 1.05', '-90 0 -25'], ['6.7 1.01 0.92', '-90 0 60']].forEach(([pos, rot]) => {
       root.appendChild(el('a-plane', {
         position: pos,
@@ -720,7 +775,6 @@ function initGame() {
         material: 'color:#f5f7f8; opacity:0.7; transparent:true; shader:flat'
       }));
     });
-
     root.appendChild(el('a-plane', {
       position: '6.55 1.005 1.0',
       rotation: '-90 0 0',
@@ -737,6 +791,7 @@ function initGame() {
       color: '#3a4749'
     }));
 
+    // periodic table
     const elements = [
       ['H', 1, 1, 'n'], ['He', 1, 18, 'noble'],
       ['Li', 2, 1, 'alkali'], ['Be', 2, 2, 'n'], ['B', 2, 13, 'n'], ['C', 2, 14, 'n'], ['N', 2, 15, 'n'], ['O', 2, 16, 'n'],
@@ -787,6 +842,7 @@ function initGame() {
       color: '#3a4749'
     }));
 
+    // ethics memo
     root.appendChild(el('a-box', {
       id: 'log3',
       class: 'clickable datapad',
@@ -806,6 +862,7 @@ function initGame() {
       color: '#3ddc8a'
     }));
 
+    // ceiling rails etc.
     root.appendChild(el('a-box', {
       position: '-3 4.7 0',
       rotation: '0 0 90',
@@ -823,6 +880,7 @@ function initGame() {
       material: 'color:#9aa4a6; shader:flat'
     }));
 
+    // hazard signage
     root.appendChild(el('a-plane', {
       position: '4.2 3.1 -6.9',
       width: '0.9',
@@ -860,6 +918,7 @@ function initGame() {
       material: 'color:#f5f7f8; shader:flat'
     }));
 
+    // fire extinguisher
     root.appendChild(el('a-cylinder', {
       position: '-6.9 0.5 -3.5',
       radius: '0.1',
@@ -873,6 +932,7 @@ function initGame() {
       material: 'color:#3a4749; shader:flat'
     }));
 
+    // floor rails
     root.appendChild(el('a-cylinder', {
       position: '0 0.15 -6.85',
       rotation: '0 0 90',
@@ -932,7 +992,9 @@ function initGame() {
     finalSteps: { scan: false, stabiliser: false, lasers: false, code: false }
   };
   const PIN_CODE = '4172';
+  const CONSOLE_PIN = '7392';
   let pinInput = '';
+  let compInput = '';
 
   function playSound(id) {
     const e = document.getElementById(id);
@@ -978,14 +1040,6 @@ function initGame() {
     });
   }
 
-  function updateContamVisual() {
-    const field = $('#contamField');
-    const fog = $('#fogLeak');
-    const level = state.contamination / 100;
-    field.setAttribute('material', `color:#e0293c; opacity:${Math.min(0.75, level * 0.9)}; transparent:true; shader:flat`);
-    fog.setAttribute('material', `color:#ffffff; opacity:${Math.min(0.4, level * 0.5)}; transparent:true; shader:flat`);
-  }
-
   function setContamination(delta) {
     if (state.gameOver) return;
     state.contamination = Math.max(0, Math.min(100, state.contamination + delta));
@@ -995,8 +1049,8 @@ function initGame() {
     fill.style.background =
       state.contamination < 40 ? 'var(--safe)' :
       state.contamination < 75 ? 'var(--warn)' : 'var(--danger)';
-    updateContamVisual();
     if (delta > 0) flashScreen('#e0293c', 200);
+    $('#fogLeak').setAttribute('material', `color:#ffffff; opacity:${Math.min(0.4, state.contamination / 250)}; transparent:true; shader:flat`);
     if (state.contamination >= 100) failEnding();
   }
 
@@ -1052,7 +1106,7 @@ function initGame() {
   $('#sample').addEventListener('click', () => {
     if (state.stage !== 'dna' || state.sampleArmed) return;
     state.sampleArmed = true;
-    $('#sample').setAttribute('animation__move', 'property: position; to: -2 1.05 -5.4; dur: 700; easing: easeInOutQuad');
+    $('#sample').setAttribute('animation__move', 'property: position; to: -2 1.05 -5.0; dur: 700; easing: easeInOutQuad');
     $('#dnaArea').setAttribute('visible', true);
     $('#fragments').setAttribute('visible', true);
     toast('Sample loaded into sequencer.');
@@ -1168,7 +1222,7 @@ function initGame() {
           playSound('sfx-success');
           toast('Compound stabilized.');
           setContamination(-15);
-          setTimeout(startVentPuzzle, 700);
+          setTimeout(startMicroscopePuzzle, 700);
         } else {
           mixer.setAttribute('animation__flash', 'property: material.color; type: color; from: #e0293c; to: #8a9a9c; dur: 500');
           playSound('sfx-error');
@@ -1180,6 +1234,67 @@ function initGame() {
       }, 420);
     });
   });
+
+  function startMicroscopePuzzle() {
+    state.stage = 'scope';
+    $('#scopeArea').setAttribute('visible', true);
+    setStage('ANALYSIS REQUIRED', 'Use the microscope, then unlock the console.');
+    setGoalText('DERIVE ACCESS PIN.');
+    setObjective('Click the microscope to inspect the slide. The organisms form shapes that look suspiciously like digits. Use that PIN on the nearby console to continue.');
+  }
+
+  $('#microscope').addEventListener('click', () => {
+    if (state.stage !== 'scope') return;
+    $('#scopeModal').classList.add('active');
+    if (document.exitPointerLock) document.exitPointerLock();
+  });
+  $('#scopeClose').addEventListener('click', () => $('#scopeModal').classList.remove('active'));
+
+  $('#labConsole').addEventListener('click', () => {
+    if (state.stage !== 'scope') return;
+    openCompModal();
+  });
+
+  function openCompModal() {
+    compInput = '';
+    updateCompDisplay();
+    $('#compModal').classList.add('active');
+    if (document.exitPointerLock) document.exitPointerLock();
+  }
+  function closeCompModal() {
+    $('#compModal').classList.remove('active');
+  }
+  function updateCompDisplay(wrong) {
+    const disp = $('#compDisplay');
+    const shown = compInput.padEnd(4, '_').split('').join(' ');
+    disp.textContent = shown;
+    disp.classList.toggle('wrong', !!wrong);
+  }
+
+  document.querySelectorAll('#compGrid button[data-d]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (compInput.length >= 4) return;
+      compInput += btn.getAttribute('data-d');
+      updateCompDisplay();
+    });
+  });
+  $('#compBackspace').addEventListener('click', () => {
+    compInput = compInput.slice(0, -1);
+    updateCompDisplay();
+  });
+  $('#compSubmit').addEventListener('click', () => {
+    if (compInput === CONSOLE_PIN) {
+      closeCompModal();
+      toast('Console unlocked. Vent controls online.');
+      playSound('sfx-success');
+      startVentPuzzle();
+    } else {
+      updateCompDisplay(true);
+      playSound('sfx-error');
+      setTimeout(() => { compInput = ''; updateCompDisplay(); }, 500);
+    }
+  });
+  $('#compClose').addEventListener('click', closeCompModal);
 
   function startVentPuzzle() {
     state.stage = 'vent';
@@ -1251,8 +1366,10 @@ function initGame() {
   $('#stepScan').addEventListener('click', () => tryFinalStep('scan', $('#stepScan')));
   $('#stepStabiliser').addEventListener('click', () => tryFinalStep('stabiliser', $('#stepStabiliser')));
   $('#stepLasers').addEventListener('click', () => tryFinalStep('lasers', $('#stepLasers')));
+
+  // terminal: remove strict stage check so it always opens once visible
   $('#stepCode').addEventListener('click', () => {
-    if (state.stage !== 'final' || state.playerMarked || state.finalSteps.code) return;
+    if (state.playerMarked || state.finalSteps.code) return;
     openPinModal();
   });
 
@@ -1262,11 +1379,9 @@ function initGame() {
     $('#pinModal').classList.add('active');
     if (document.exitPointerLock) document.exitPointerLock();
   }
-
   function closePinModal() {
     $('#pinModal').classList.remove('active');
   }
-
   function updatePinDisplay(wrong) {
     const disp = $('#pinDisplay');
     const shown = pinInput.padEnd(4, '_').split('').join(' ');
