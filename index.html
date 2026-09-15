@@ -2,16 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>CONTAINMENT :: Lab 07</title>
+<title>LAB 07 :: CONTAINMENT</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe-master.min.js"></script>
 
 <style>
 :root{
-  --bg:#eef2f3;
-  --danger:#e0293c;
-  --warn:#c9820a;
-  --safe:#1f9d5c;
+  --bg:#0b1114;
+  --panel:#141c20;
+  --panel-soft:#1b262c;
+  --accent:#3ddc8a;
+  --accent-warn:#f5b642;
+  --accent-danger:#ff4b5c;
+  --text-main:#e8f1f5;
+  --text-soft:#9fb3c1;
 }
 html,body{
   margin:0;
@@ -19,7 +23,7 @@ html,body{
   background:var(--bg);
   overflow:hidden;
   height:100%;
-  font-family:Arial,Helvetica,sans-serif;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 }
 a-scene{width:100vw;height:100vh;}
 
@@ -27,110 +31,204 @@ a-scene{width:100vw;height:100vh;}
   position:fixed;
   inset:0;
   pointer-events:none;
-  font-family:'Courier New', monospace;
-  color:#12181a;
-  z-index:5;
+  z-index:10;
 }
-#meterBox{
+
+/* contamination meter */
+#contBox{
   position:absolute;
   top:18px;
   left:18px;
-  width:280px;
-  background:#ffffffee;
-  border:1px solid #b7c0c4;
+  width:260px;
+  background:var(--panel);
+  border-radius:8px;
+  box-shadow:0 0 0 1px #1f2a30,0 14px 40px rgba(0,0,0,.6);
   padding:10px 12px;
 }
-#meterLabel{
-  font-size:11px;
+#contHeader{
   display:flex;
   justify-content:space-between;
+  align-items:center;
+  font-size:11px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--text-soft);
+  margin-bottom:6px;
 }
-#meterTrack{
-  height:10px;
-  background:#e0e6e8;
-  border:1px solid #b7c0c4;
+#contHeader span.label{
+  display:flex;
+  align-items:center;
+  gap:6px;
 }
-#meterFill{
-  height:100%;
+#contHeader span.label::before{
+  content:"";
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:var(--accent-danger);
+  box-shadow:0 0 12px rgba(255,75,92,.8);
+}
+#contHeader span.value{
+  font-weight:600;
+  color:var(--text-main);
+}
+#contTrack{
+  position:relative;
+  width:100%;
+  height:12px;
+  border-radius:999px;
+  background:linear-gradient(90deg,#0f171b,#111c21);
+  box-shadow:inset 0 0 0 1px #1f2a30;
+  overflow:hidden;
+}
+#contFill{
+  position:absolute;
+  inset:0;
   width:0%;
-  background:var(--safe);
-  transition:width .4s ease, background .4s ease;
+  border-radius:999px;
+  background:linear-gradient(90deg,#3ddc8a,#f5b642,#ff4b5c);
+  box-shadow:0 0 18px rgba(255,75,92,.7);
+  transition:width .35s ease-out,filter .35s ease-out;
+  filter:saturate(1.2);
 }
+#contTicks{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+#contTicks span{
+  position:absolute;
+  top:0;
+  width:1px;
+  height:12px;
+  background:#1f2a30;
+  opacity:.7;
+}
+#contTicks span:nth-child(1){left:33%;}
+#contTicks span:nth-child(2){left:66%;}
 
+/* stage + objective */
 #stageBox{
   position:absolute;
   top:18px;
   right:18px;
-  background:#ffffffee;
-  border:1px solid #b7c0c4;
-  padding:10px 12px;
-  font-size:11px;
-}
-#stageBox b{
+  max-width:320px;
+  background:var(--panel);
+  border-radius:8px;
+  box-shadow:0 0 0 1px #1f2a30,0 14px 40px rgba(0,0,0,.6);
+  padding:10px 14px;
   font-size:12px;
+  color:var(--text-soft);
+}
+#stageName{
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--text-main);
+  margin-bottom:4px;
+}
+#stageHint{
+  font-size:11px;
+  line-height:1.5;
 }
 
 #objectiveBox{
   position:absolute;
   bottom:18px;
   left:18px;
-  max-width:440px;
-  background:#ffffffee;
-  border-left:3px solid var(--warn);
-  padding:10px 14px;
+  max-width:420px;
+  background:var(--panel-soft);
+  border-radius:10px;
+  box-shadow:0 0 0 1px #1f2a30,0 18px 40px rgba(0,0,0,.7);
+  padding:12px 16px;
+  font-size:12px;
+  color:var(--text-main);
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
   opacity:0;
-  transform:translateY(6px);
-  transition:opacity .5s ease, transform .5s ease;
+  transform:translateY(8px);
+  transition:opacity .4s ease,transform .4s ease;
+}
+#objectiveBox::before{
+  content:"";
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  margin-top:4px;
+  background:var(--accent);
+  box-shadow:0 0 12px rgba(61,220,138,.8);
 }
 #objectiveBox.show{
   opacity:1;
   transform:translateY(0);
 }
 
+/* toast */
 #toast{
   position:absolute;
   bottom:70px;
   left:50%;
   transform:translateX(-50%) translateY(10px);
-  background:#12181aee;
-  color:#eef2f3;
-  border:1px solid #333;
-  padding:6px 14px;
-  font-size:12px;
+  background:rgba(10,16,20,.96);
+  border-radius:999px;
+  box-shadow:0 0 0 1px #1f2a30,0 12px 30px rgba(0,0,0,.7);
+  padding:6px 16px;
+  font-size:11px;
+  color:var(--text-main);
   opacity:0;
-  transition:opacity .3s ease, transform .3s ease;
+  transition:opacity .25s ease,transform .25s ease;
+  pointer-events:none;
 }
 #toast.show{
   opacity:1;
   transform:translateX(-50%) translateY(0);
 }
 
+/* crosshair / pointer */
 #crosshair{
   position:absolute;
   top:50%;
   left:50%;
-  width:6px;
-  height:6px;
-  margin:-3px 0 0 -3px;
-  border-radius:50%;
-  background:#12181a;
-  opacity:0.9;
-  transition:transform .1s ease, background .1s ease;
+  width:14px;
+  height:14px;
+  margin:-7px 0 0 -7px;
+  border-radius:999px;
+  box-shadow:0 0 0 1px rgba(0,0,0,.8),0 0 0 2px rgba(255,255,255,.08);
+  background:radial-gradient(circle at 50% 50%,#ffffff,#cfe7ff 40%,transparent 70%);
+  opacity:.9;
+  transition:transform .08s ease,box-shadow .08s ease,background .08s ease;
+  z-index:9;
+}
+#crosshair::after{
+  content:"";
+  position:absolute;
+  inset:4px;
+  border-radius:999px;
+  background:radial-gradient(circle at 50% 50%,#3ddc8a,#1f9d5c 60%,transparent 100%);
+  opacity:.0;
+  transition:opacity .08s ease;
 }
 #crosshair.hot{
-  background:#1f9d5c;
-  transform:scale(1.4);
+  transform:scale(1.25);
+  box-shadow:0 0 0 1px rgba(0,0,0,.9),0 0 0 2px rgba(61,220,138,.7),0 0 16px rgba(61,220,138,.9);
+}
+#crosshair.hot::after{
+  opacity:.9;
 }
 
+/* flash */
 #flash{
   position:fixed;
   inset:0;
-  background:var(--danger);
+  background:radial-gradient(circle at 50% 50%,rgba(255,75,92,.45),rgba(0,0,0,.9));
   opacity:0;
   pointer-events:none;
-  z-index:6;
+  z-index:8;
 }
 
+/* overlays */
 .overlay{
   position:fixed;
   inset:0;
@@ -138,49 +236,71 @@ a-scene{width:100vw;height:100vh;}
   align-items:center;
   justify-content:center;
   flex-direction:column;
-  background:rgba(10,15,17,.95);
+  background:radial-gradient(circle at 50% 0,rgba(61,220,138,.08),rgba(0,0,0,.96));
   z-index:20;
   text-align:center;
   padding:40px;
+  color:var(--text-main);
   font-family:'Courier New',monospace;
-  color:#eef2f3;
 }
 .overlay.active{display:flex;}
 .overlay h1{
-  font-size:32px;
-  margin-bottom:14px;
+  font-size:28px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  margin-bottom:12px;
+}
+.overlay p{
+  max-width:520px;
+  font-size:13px;
+  line-height:1.6;
+  color:var(--text-soft);
+  margin-bottom:22px;
 }
 .overlay button{
+  font-family:'Courier New',monospace;
+  font-size:12px;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  padding:10px 26px;
+  border-radius:999px;
+  border:1px solid var(--text-main);
   background:transparent;
-  color:#eef2f3;
-  border:1px solid #eef2f3;
-  padding:12px 26px;
-  font-size:13px;
+  color:var(--text-main);
   cursor:pointer;
 }
 .overlay button:hover{
-  background:#eef2f3;
-  color:#12181a;
+  background:var(--text-main);
+  color:#05080a;
 }
 
-#introOverlay h1{color:#ff5e5e;}
-#failOverlay h1{color:#ff5e5e;}
-#successOverlay h1{color:#3ddc8a;}
-#secretOverlay h1{color:#ffb020;}
+/* intro colors */
+#introOverlay h1{color:var(--accent);}
+#failOverlay h1{color:var(--accent-danger);}
+#successOverlay h1{color:var(--accent);}
+#secretOverlay h1{color:var(--accent-warn);}
 </style>
 </head>
 
 <body>
 
 <div id="hud">
-  <div id="meterBox">
-    <div id="meterLabel"><span>CONTAMINATION</span><span id="meterPct">0%</span></div>
-    <div id="meterTrack"><div id="meterFill"></div></div>
+  <div id="contBox">
+    <div id="contHeader">
+      <span class="label">CONTAMINATION</span>
+      <span class="value" id="contValue">0%</span>
+    </div>
+    <div id="contTrack">
+      <div id="contFill"></div>
+      <div id="contTicks">
+        <span></span><span></span>
+      </div>
+    </div>
   </div>
 
   <div id="stageBox">
-    <b id="stageName">SYSTEM BOOT</b>
-    <span id="stageHint">Initializing containment lab...</span>
+    <div id="stageName">SYSTEM BOOT</div>
+    <div id="stageHint">Initializing containment lab...</div>
   </div>
 
   <div id="objectiveBox"></div>
@@ -191,215 +311,195 @@ a-scene{width:100vw;height:100vh;}
 <div id="flash"></div>
 
 <div id="introOverlay" class="overlay active">
-  <h1>LAB 07 - CONTAINMENT BREACH</h1>
-  <p>Power failed six minutes ago. Restore power and stabilize the sample.</p>
+  <h1>LAB 07 :: CONTAINMENT</h1>
+  <p>
+    Power failed six minutes ago. Contamination is rising.
+    Restore power, stabilize the sample, and reach the override
+    before the room is sealed. Click to look, WASD to move, aim the
+    reticle and click to interact.
+  </p>
   <button id="enterBtn">ENTER THE LAB</button>
 </div>
 
 <div id="failOverlay" class="overlay">
   <h1>CONTAINMENT LOST</h1>
-  <p>You did not make it out.</p>
+  <p>
+    Contamination reached critical levels. The blast doors seal.
+    Your ID is logged as "Subject 07 – failed containment".
+  </p>
   <button onclick="location.reload()">RESTART</button>
 </div>
 
 <div id="successOverlay" class="overlay">
   <h1>CONTAINMENT RESTORED</h1>
-  <p>You escape before the seal fails.</p>
+  <p>
+    Override accepted. The fog retracts, alarms fall silent, and the
+    blast door unlocks. You step out as the lab resets.
+  </p>
   <button onclick="location.reload()">RESTART</button>
 </div>
 
 <div id="secretOverlay" class="overlay">
-  <h1>"SUBJECT 07 RECOGNISED."</h1>
-  <p>The lights dim. The door unlocks itself.</p>
+  <h1>SUBJECT 07 RECOGNISED</h1>
+  <p>
+    The orange vial hums softly. Systems stand down on their own.
+    The door was never really locked for you.
+  </p>
   <button onclick="location.reload()">RESTART</button>
 </div>
 
-<a-scene id="scene" background="color:#cfd8dc">
+<a-scene id="scene" background="color:#05080a" renderer="physicallyCorrectLights:false">
 
   <a-assets>
     <audio id="sfx-error" src="assets/audio/error.mp3"></audio>
     <audio id="sfx-success" src="assets/audio/success.mp3"></audio>
+    <audio id="sfx-glitch" src="assets/audio/glitch.mp3"></audio>
     <audio id="sfx-voice" src="assets/audio/voice-intro.mp3"></audio>
   </a-assets>
 
-  <a-entity id="rig" position="0 1.6 4">
+  <!-- rig + camera + pointer -->
+  <a-entity id="rig" position="0 1.6 4" movement-controls="fly:false">
     <a-camera look-controls="pointerLockEnabled:true" wasd-controls="acceleration:60">
       <a-cursor id="cursor"
         raycaster="objects:.clickable; far:20"
-        material="color:#1f9d5c; shader:flat; opacity:0"
+        material="color:#3ddc8a; shader:flat; opacity:0"
         geometry="radiusInner:0.001; radiusOuter:0.002">
       </a-cursor>
     </a-camera>
   </a-entity>
 
-  <!-- Room -->
-  <a-plane rotation="-90 0 0" width="14" height="14" color="#b7c0c4"></a-plane>
+  <!-- lighting -->
+  <a-entity light="type:ambient; intensity:0.6; color:#cfd8dc"></a-entity>
+  <a-entity light="type:point; intensity:1.2; distance:20; color:#ffffff" position="0 4.5 0"></a-entity>
+  <a-entity id="alarmLight1" light="type:spot; intensity:0; angle:40; penumbra:0.4; color:#ff4b5c"
+            position="-4 3 -3" rotation="-60 0 0"></a-entity>
+  <a-entity id="alarmLight2" light="type:spot; intensity:0; angle:40; penumbra:0.4; color:#ff4b5c"
+            position="4 3 3" rotation="-60 180 0"></a-entity>
 
-  <!-- Power panel -->
+  <!-- room shell -->
+  <a-plane rotation="-90 0 0" width="14" height="14" material="color:#10161b; shader:flat"></a-plane>
+  <a-plane rotation="90 0 0" position="0 5 0" width="14" height="14" material="color:#05080a; shader:flat"></a-plane>
+  <a-plane position="0 2.5 -7" width="14" height="5" material="color:#111820; shader:flat"></a-plane>
+  <a-plane position="0 2.5 7" rotation="0 180 0" width="14" height="5" material="color:#111820; shader:flat"></a-plane>
+  <a-plane position="-7 2.5 0" rotation="0 90 0" width="14" height="5" material="color:#0d1419; shader:flat"></a-plane>
+  <a-plane position="7 2.5 0" rotation="0 -90 0" width="14" height="5" material="color:#0d1419; shader:flat"></a-plane>
+
+  <!-- containment pod + fog -->
+  <a-plane rotation="-90 0 0" position="0 0.01 -5" width="6" height="0.6"
+           material="color:#1f2a30; shader:flat"></a-plane>
+  <a-entity position="0 1.1 -6.3">
+    <a-cylinder radius="0.9" height="2.2" material="color:#1b262c; shader:flat"></a-cylinder>
+    <a-cylinder radius="0.8" height="2.1" material="color:#0b1114; shader:flat; opacity:0.85; transparent:true"></a-cylinder>
+    <a-sphere position="0 -0.9 0.85" radius="0.25"
+              material="color:#3ddc8a; shader:flat; opacity:0.9; transparent:true"></a-sphere>
+    <a-text value="CONTAINMENT POD // BREACH" position="0 1.5 0.85" align="center"
+            width="3" color="#ff4b5c"></a-text>
+  </a-entity>
+
+  <a-plane id="fogLeak" rotation="-90 0 0" position="0 0.05 0" width="14" height="14"
+           material="color:#9fb3c1; shader:flat; opacity:0.0; transparent:true"></a-plane>
+
+  <!-- power relay -->
   <a-entity id="powerPanel" position="-5.5 1.4 -2">
-    <a-box class="clickable switch" id="switch1" data-switch="1" position="-0.4 0 0.3" color="#e0293c"></a-box>
-    <a-box class="clickable switch" id="switch2" data-switch="2" position="0 0 0.3" color="#e0293c"></a-box>
-    <a-box class="clickable switch" id="switch3" data-switch="3" position="0.4 0 0.3" color="#e0293c"></a-box>
-    <a-box class="clickable" id="switchFaulty" data-switch="X" position="0.85 0 0.3" color="#9aa4a6"></a-box>
+    <a-plane width="1.8" height="1.4" rotation="0 40 0"
+             material="color:#141c20; shader:flat"></a-plane>
+    <a-text value="POWER RELAY" position="0 0.85 0" rotation="0 40 0" align="center"
+            width="2" color="#9fb3c1"></a-text>
+
+    <a-box class="clickable switch" id="switch1" data-switch="1" position="-0.4 0 0.3" rotation="0 40 0"
+           width="0.3" height="0.55" depth="0.15"
+           material="color:#ff4b5c; shader:flat"></a-box>
+    <a-box class="clickable switch" id="switch2" data-switch="2" position="0 0 0.3" rotation="0 40 0"
+           width="0.3" height="0.55" depth="0.15"
+           material="color:#ff4b5c; shader:flat"></a-box>
+    <a-box class="clickable switch" id="switch3" data-switch="3" position="0.4 0 0.3" rotation="0 40 0"
+           width="0.3" height="0.55" depth="0.15"
+           material="color:#ff4b5c; shader:flat"></a-box>
+
+    <a-box class="clickable switch-decoy" id="switchFaulty" data-switch="X" position="0.85 0 0.3" rotation="0 40 0"
+           width="0.3" height="0.55" depth="0.15"
+           material="color:#9fb3c1; shader:flat"></a-box>
+
+    <a-text value="1 2 3 X" position="0 -0.5 0.3" rotation="0 40 0" align="center"
+            width="2.2" color="#9fb3c1"></a-text>
   </a-entity>
 
-  <!-- DNA -->
-  <a-entity id="dnaArea" visible="false" position="-2 1.1 -5.6">
-    <a-box width="1.6" height="1" depth="0.8" color="#8a9a9c"></a-box>
-    <a-box class="clickable dna-slot" id="slotA" data-slot="A" data-correct="fragB" position="-0.5 0.55 0.15" color="#c7d0d2"></a-box>
-    <a-box class="clickable dna-slot" id="slotB" data-slot="B" data-correct="fragC" position="0 0.55 0.15" color="#c7d0d2"></a-box>
-    <a-box class="clickable dna-slot" id="slotC" data-slot="C" data-correct="fragA" position="0.5 0.55 0.15" color="#c7d0d2"></a-box>
+  <!-- sample console (green sphere repurposed) -->
+  <a-entity id="sampleConsole" position="-2 1.1 -3.2">
+    <a-box width="1.4" height="0.4" depth="0.9" material="color:#141c20; shader:flat"></a-box>
+    <a-text value="SAMPLE ACCESS" position="0 0.45 0.3" align="center" width="2"
+            color="#9fb3c1"></a-text>
+    <a-sphere class="clickable" id="sampleButton" position="0 0.2 0.35" radius="0.16"
+              material="color:#3ddc8a; shader:flat; opacity:0.95; transparent:true"></a-sphere>
+    <a-text value="PRESS TO LOAD SAMPLE" position="0 -0.1 0.3" align="center" width="2"
+            color="#3ddc8a"></a-text>
   </a-entity>
 
-  <a-sphere class="clickable" id="sample" position="-2 1 -3" radius="0.18" color="#1f9d5c"></a-sphere>
+  <!-- DNA sequencer -->
+  <a-entity id="dnaArea" position="-2 1.1 -5.6" visible="false">
+    <a-box width="1.6" height="1" depth="0.8" material="color:#141c20; shader:flat"></a-box>
+    <a-text value="GENE SEQUENCER" position="0 0.85 0" align="center" width="2.4"
+            color="#9fb3c1"></a-text>
+
+    <a-box class="clickable dna-slot" id="slotA" data-slot="A" position="-0.5 0.55 0.15"
+           width="0.35" height="0.15" depth="0.35"
+           material="color:#1b262c; shader:flat"></a-box>
+    <a-text id="slotAHint" value="NEEDS: BLUE STRAND" position="-0.5 0.35 0.4" align="center"
+            width="1.3" color="#3da5ff" visible="false"></a-text>
+
+    <a-box class="clickable dna-slot" id="slotB" data-slot="B" position="0 0.55 0.15"
+           width="0.35" height="0.15" depth="0.35"
+           material="color:#1b262c; shader:flat"></a-box>
+    <a-text id="slotBHint" value="NEEDS: YELLOW STRAND" position="0 0.35 0.4" align="center"
+            width="1.4" color="#f5b642" visible="false"></a-text>
+
+    <a-box class="clickable dna-slot" id="slotC" data-slot="C" position="0.5 0.55 0.15"
+           width="0.35" height="0.15" depth="0.35"
+           material="color:#1b262c; shader:flat"></a-box>
+    <a-text id="slotCHint" value="NEEDS: RED STRAND" position="0.5 0.35 0.4" align="center"
+            width="1.2" color="#ff4b5c" visible="false"></a-text>
+  </a-entity>
 
   <a-entity id="fragments" visible="false">
-    <a-sphere class="clickable dna-fragment" id="fragA" data-frag="fragA" position="-2.6 1.05 -4.9" radius="0.15" color="#c9303f"></a-sphere>
-    <a-sphere class="clickable dna-fragment" id="fragB" data-frag="fragB" position="-2 1.05 -4.9" radius="0.15" color="#1a73c4"></a-sphere>
-    <a-sphere class="clickable dna-fragment" id="fragC" data-frag="fragC" position="-1.4 1.05 -4.9" radius="0.15" color="#c9820a"></a-sphere>
+    <a-sphere class="clickable dna-fragment" id="fragA" data-frag="fragA" position="-2.6 1.05 -4.9"
+              radius="0.15" material="color:#ff4b5c; shader:flat"></a-sphere>
+    <a-sphere class="clickable dna-fragment" id="fragB" data-frag="fragB" position="-2 1.05 -4.9"
+              radius="0.15" material="color:#3da5ff; shader:flat"></a-sphere>
+    <a-sphere class="clickable dna-fragment" id="fragC" data-frag="fragC" position="-1.4 1.05 -4.9"
+              radius="0.15" material="color:#f5b642; shader:flat"></a-sphere>
   </a-entity>
 
-  <!-- Chem -->
-  <a-entity id="chemArea" visible="false" position="4.5 1.2 -5.2">
-    <a-cylinder class="clickable bottle" id="bottleA" data-bottle="A" position="-0.6 0.4 0" radius="0.14" height="0.42" color="#3ddc8a"></a-cylinder>
-    <a-cylinder class="clickable bottle" id="bottleB" data-bottle="B" position="0 0.4 0" radius="0.14" height="0.42" color="#e07850"></a-cylinder>
-    <a-cylinder class="clickable bottle" id="bottleC" data-bottle="C" position="0.6 0.4 0" radius="0.14" height="0.42" color="#9a5ee0"></a-cylinder>
-    <a-box id="mixer" position="0 0 0.8" width="0.5" height="0.4" depth="0.5" color="#8a9a9c"></a-box>
+  <!-- chem area -->
+  <a-entity id="chemArea" position="4.5 1.2 -5.2" visible="false">
+    <a-text value="CHEM STABILISER" position="0 1 0" align="center" width="3"
+            color="#9fb3c1"></a-text>
+
+    <a-cylinder class="clickable bottle" id="bottleA" data-bottle="A" position="-0.6 0.4 0"
+                radius="0.14" height="0.42" material="color:#3ddc8a; shader:flat"></a-cylinder>
+    <a-cylinder class="clickable bottle" id="bottleB" data-bottle="B" position="0 0.4 0"
+                radius="0.14" height="0.42" material="color:#f5b642; shader:flat"></a-cylinder>
+    <a-cylinder class="clickable bottle" id="bottleC" data-bottle="C" position="0.6 0.4 0"
+                radius="0.14" height="0.42" material="color:#9a5ee0; shader:flat"></a-cylinder>
+
+    <a-box id="mixer" position="0 0 0.8" width="0.5" height="0.4" depth="0.5"
+           material="color:#141c20; shader:flat"></a-box>
+    <a-text value="ONLY ONE MIX IS STABLE" position="0 -0.2 0" align="center" width="2.4"
+            color="#9fb3c1"></a-text>
   </a-entity>
 
-  <!-- Vent -->
-  <a-entity id="ventArea" visible="false" position="6.5 1.3 -2">
-    <a-box class="clickable vent-btn" id="ventBtn1" data-btn="1" position="0 0.3 -0.3" color="#1a73c4"></a-box>
-    <a-box class="clickable vent-btn" id="ventBtn2" data-btn="2" position="0 0.3 0" color="#c9820a"></a-box>
-    <a-box class="clickable vent-btn" id="ventBtn3" data-btn="3" position="0 0.3 0.3" color="#c9303f"></a-box>
+  <!-- vent area -->
+  <a-entity id="ventArea" position="6.5 1.3 -2" visible="false">
+    <a-text value="AIRFLOW CONTROL" position="0 0.7 0" rotation="0 -90 0" align="center"
+            width="2" color="#9fb3c1"></a-text>
+
+    <a-box class="clickable vent-btn" id="ventBtn1" data-btn="1" position="0 0.3 -0.3" rotation="0 -90 0"
+           width="0.24" height="0.24" depth="0.12" material="color:#3da5ff; shader:flat"></a-box>
+    <a-box class="clickable vent-btn" id="ventBtn2" data-btn="2" position="0 0.3 0" rotation="0 -90 0"
+           width="0.24" height="0.24" depth="0.12" material="color:#f5b642; shader:flat"></a-box>
+    <a-box class="clickable vent-btn" id="ventBtn3" data-btn="3" position="0 0.3 0.3" rotation="0 -90 0"
+           width="0.24" height="0.24" depth="0.12" material="color:#ff4b5c; shader:flat"></a-box>
   </a-entity>
 
-  <!-- Secret vial -->
-  <a-cylinder class="clickable" id="vialSubject07" position="6.3 0.9 5.5" radius="0.1" height="0.32" color="#c9820a"></a-cylinder>
-
-  <!-- Final override -->
-  <a-entity id="finalArea" visible="false" position="0 1.3 6.8">
-    <a-box class="clickable final-step" id="stepScan" data-step="scan" position="-1.9 0.4 0" color="#1a73c4"></a-box>
-    <a-box class="clickable final-step" id="stepStabiliser" data-step="stabiliser" position="-0.65 0.4 0" color="#1f9d5c"></a-box>
-    <a-box class="clickable final-step" id="stepLasers" data-step="lasers" position="0.65 0.4 0" color="#c9303f"></a-box>
-    <a-box class="clickable final-step" id="stepCode" data-step="code" position="1.9 0.4 0" color="#0f3d2a"></a-box>
-  </a-entity>
-
-</a-scene>
-
-<script>
-/* ============================================================
-   STATE
-============================================================ */
-const state = {
-  stage: "intro",
-  contamination: 0,
-  power: {1:false,2:false,3:false},
-  correctPowerOrder: [],
-  faultySwitch: "X",
-  sampleArmed: false,
-  selectedFragment: null,
-  dnaSlots: {A:null,B:null,C:null},
-  ventSequence: [],
-  ventCorrectSequence: [],
-  correctBottle: null,
-  finalSteps: {scan:false, stabiliser:false, lasers:false, code:false},
-  gameOver:false
-};
-
-/* ============================================================
-   UTIL
-============================================================ */
-function $(s){return document.querySelector(s);}
-function playSound(id){const e=$(id); if(e){e.currentTime=0; e.play().catch(()=>{});} }
-function toast(msg){
-  const t=$("#toast");
-  t.textContent=msg;
-  t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),1500);
-}
-function setStage(a,b){$("#stageName").textContent=a; $("#stageHint").textContent=b;}
-function setObjective(t){
-  const o=$("#objectiveBox");
-  o.classList.remove("show");
-  setTimeout(()=>{o.textContent=t; o.classList.add("show");},150);
-}
-function setGoalText(t){}
-
-/* ============================================================
-   CONTAMINATION
-============================================================ */
-function setContamination(d){
-  if(state.gameOver) return;
-  state.contamination=Math.min(100,state.contamination+d);
-  $("#meterFill").style.width=state.contamination+"%";
-  $("#meterPct").textContent=Math.round(state.contamination)+"%";
-  if(state.contamination>=100) failEnding();
-}
-setInterval(()=>{ if(state.stage!=="intro" && !state.gameOver) setContamination(1); },8000);
-
-/* ============================================================
-   RANDOMIZE
-============================================================ */
-function randomizeLogic(){
-  state.correctPowerOrder=["1","2","3"].sort(()=>Math.random()-0.5);
-  state.ventCorrectSequence=["1","2","3"].sort(()=>Math.random()-0.5);
-  state.correctBottle=["A","B","C"][Math.floor(Math.random()*3)];
-}
-randomizeLogic();
-
-/* ============================================================
-   PERIODIC TABLE CLUE
-============================================================ */
-function applyPeriodicTableClue(){
-  const symbols=["H","He","Li"];
-  const texts=[...document.querySelectorAll("a-text")].filter(t=>symbols.includes(t.getAttribute("value")));
-  texts.forEach(t=>t.setAttribute("color","#3a4749"));
-  state.correctPowerOrder.forEach((n,i)=>{
-    const idx=parseInt(n)-1;
-    const el=texts[idx];
-    if(el){
-      el.setAttribute("color","#1f9d5c");
-      el.setAttribute("scale",`${1+0.15*i} ${1+0.15*i} 1`);
-    }
-  });
-}
-applyPeriodicTableClue();
-
-/* ============================================================
-   ENTER LAB
-============================================================ */
-$("#enterBtn").addEventListener("click",()=>{
-  $("#introOverlay").classList.remove("active");
-  playSound("#sfx-voice");
-  state.stage="power";
-  setStage("POWER FAILURE","Restore the relay.");
-  setObjective("Flip the switches in the correct order.");
-});
-
-/* ============================================================
-   POWER PUZZLE
-============================================================ */
-let powerOrderInput=[];
-["switch1","switch2","switch3"].forEach(id=>{
-  $("#"+id).addEventListener("click",e=>{
-    if(state.stage!=="power") return;
-    const num=e.target.getAttribute("data-switch");
-    if(num===state.faultySwitch){
-      toast("FAULT!");
-      playSound("#sfx-error");
-      setContamination(10);
-      return;
-    }
-    state.power[num]=true;
-    e.target.setAttribute("color","#1f9d5c");
-    powerOrderInput.push(num);
-    if(powerOrderInput.length===3){
-      if(powerOrderInput.join("")===state.correctPowerOrder.join("")){
-        toast("Power restored.");
-        playSound("#sfx-success");
-        startDnaPuzzle();
-      } else {
-        toast("Wrong order!");
-        playSound("#sfx-error");
-        setContamination(10);
+  <!-- subject 07 vial (secret) -->
+  <a-cylinder class="clickable" id="vialSubject07" position="6.3 0.9 5.5" radius="0.1"
+              height="0.32" material
